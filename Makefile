@@ -11,22 +11,23 @@ LDADD+=		${LIBDL} -lm
 OBJS=		array.o compats.o conditional.o diff.o diffutil.o mainutils.o \
 		map.o parser.o parser/plugin.o portscanlog.o regexp.o rules.o \
 		set.o target.o token.o util.o variable.o
-PLUGINS=	parser/plugin.edit.bump-revision.${LIBSUFFIX} \
-		parser/plugin.edit.merge.${LIBSUFFIX} \
-		parser/plugin.edit.set-version.${LIBSUFFIX} \
-		parser/plugin.kakoune.select-object-on-line.${LIBSUFFIX} \
-		parser/plugin.lint.clones.${LIBSUFFIX} \
-		parser/plugin.lint.order.${LIBSUFFIX} \
-		parser/plugin.output.unknown-targets.${LIBSUFFIX} \
-		parser/plugin.output.unknown-variables.${LIBSUFFIX} \
-		parser/plugin.output.variable-value.${LIBSUFFIX} \
-		parser/plugin.refactor.collapse-adjacent-variables.${LIBSUFFIX} \
-		parser/plugin.refactor.dedup-tokens.${LIBSUFFIX} \
-		parser/plugin.refactor.remove-consecutive-empty-lines.${LIBSUFFIX} \
-		parser/plugin.refactor.sanitize-append-modifier.${LIBSUFFIX} \
-		parser/plugin.refactor.sanitize-cmake-args.${LIBSUFFIX} \
-		parser/plugin.refactor.sanitize-comments.${LIBSUFFIX} \
-		parser/plugin.refactor.sanitize-eol-comments.${LIBSUFFIX}
+PLUGINS=
+STATIC_PLUGINS=	parser/plugin.edit.bump-revision.o \
+		parser/plugin.edit.merge.o \
+		parser/plugin.edit.set-version.o \
+		parser/plugin.kakoune.select-object-on-line.o \
+		parser/plugin.lint.clones.o \
+		parser/plugin.lint.order.o \
+		parser/plugin.output.unknown-targets.o \
+		parser/plugin.output.unknown-variables.o \
+		parser/plugin.output.variable-value.o \
+		parser/plugin.refactor.collapse-adjacent-variables.o \
+		parser/plugin.refactor.dedup-tokens.o \
+		parser/plugin.refactor.remove-consecutive-empty-lines.o \
+		parser/plugin.refactor.sanitize-append-modifier.o \
+		parser/plugin.refactor.sanitize-cmake-args.o \
+		parser/plugin.refactor.sanitize-comments.o \
+		parser/plugin.refactor.sanitize-eol-comments.o
 
 .SUFFIXES: .${LIBSUFFIX}
 
@@ -38,9 +39,9 @@ all: portclippy portedit portfmt portscan ${PLUGINS}
 .o.${LIBSUFFIX}: ${LIBNAME}.${LIBSUFFIX}
 	${CC} ${LDFLAGS} ${PLUGIN_LDFLAGS} -o $@ $< ${LIBNAME}.${LIBSUFFIX}
 
-${LIBNAME}.${LIBSUFFIX}: ${OBJS}
+${LIBNAME}.${LIBSUFFIX}: ${OBJS} ${STATIC_PLUGINS}
 	${CC} ${LDFLAGS} ${SHARED_LDFLAGS} -o ${LIBNAME}.${LIBSUFFIX} ${OBJS} \
-		${LDADD}
+		${STATIC_PLUGINS} ${LDADD}
 
 portclippy: ${LIBNAME}.${LIBSUFFIX} portclippy.o
 	${CC} ${LDFLAGS} -o portclippy portclippy.o ${LIBNAME}.${LIBSUFFIX}
@@ -99,11 +100,14 @@ util.o: config.h array.h util.h
 variable.o: config.h regexp.h rules.h util.h variable.h
 
 install:
-	${MKDIR} ${DESTDIR}${BINDIR} ${DESTDIR}${LIBDIR}/portfmt ${DESTDIR}${MANDIR}/man1
+	${MKDIR} ${DESTDIR}${BINDIR} ${DESTDIR}${MANDIR}/man1
 	${INSTALL_MAN} man/*.1 ${DESTDIR}${MANDIR}/man1
 	${INSTALL_PROGRAM} portclippy portedit portfmt portscan ${DESTDIR}${BINDIR}
 	${INSTALL_LIB} ${LIBNAME}.${LIBSUFFIX} ${DESTDIR}${LIBDIR}
-	${INSTALL_LIB} ${PLUGINS} ${DESTDIR}${LIBDIR}/portfmt
+	if [ -n "${PLUGINS}" ]; then \
+		${MKDIR} ${DESTDIR}${LIBDIR}/portfmt && \
+		${INSTALL_LIB} ${PLUGINS} ${DESTDIR}${LIBDIR}/portfmt; \
+	fi
 
 install-symlinks:
 	@${MAKE} INSTALL_LIB="install -l as" INSTALL_MAN="install -l as" \
@@ -114,8 +118,9 @@ regen-rules:
 	@/bin/sh generate_rules.sh
 
 clean:
-	@rm -f ${OBJS} ${PLUGINS} parser/*.o *.o libportfmt.${LIBSUFFIX} portclippy portedit portfmt \
-		portscan config.*.old
+	@rm -f ${OBJS} ${PLUGINS} ${STATIC_PLUGINS} parser/*.${LIBSUFFIX} \
+		parser/*.o *.o libportfmt.${LIBSUFFIX} portclippy portedit \
+		portfmt portscan config.*.old
 
 debug:
 	@${MAKE} CFLAGS="-Wall -std=c99 -O1 -g -fno-omit-frame-pointer" \

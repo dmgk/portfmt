@@ -45,7 +45,6 @@ void parser_plugin_register(struct ParserPluginInfo *);
 
 #define PLUGIN(name, f) \
 	static struct ParserPluginInfo plugin_info = { 0, name, f }; \
-	void register_plugin(void); \
-	void register_plugin() { \
+	__attribute__((constructor)) static void register_plugin(void) { \
 		parser_plugin_register(&plugin_info); \
 	}

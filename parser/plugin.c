@@ -43,6 +43,8 @@
 
 static struct ParserPluginInfo *plugins[256];
 static size_t plugins_len = 0;
+static void *handles[256];
+static size_t handles_len = 0;
 
 static void
 parser_plugin_load(const char *filename)
@@ -51,12 +53,7 @@ parser_plugin_load(const char *filename)
 	if (handle == NULL) {
 		errx(1, "dlopen: %s: %s", filename, dlerror());
 	}
-	void (*register_plugin)(void) = dlsym(handle, "register_plugin");
-	if (register_plugin == NULL) {
-		dlclose(handle);
-		return;
-	}
-	register_plugin();
+	handles[handles_len++] = handle;
 }
 
 void
